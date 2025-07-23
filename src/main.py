@@ -1,17 +1,15 @@
+import argparse
 from endpoints import fetch_cookies, fetch_story_content_zip, fetch_library
 from epub_generator import EPUBGenerator
 from parser import fetch_image, fetch_tree_images, clean_tree
 from asyncio import run
 from pathlib import Path
-from os import environ, remove
-from dotenv import load_dotenv
+from os import remove
 from zipfile import ZipFile
 from json import load, dump
 from re import sub
 
-load_dotenv()
-
-
+# This helper function remains unchanged
 def ascii_only(string: str):
     string = string.replace(" ", "_")
     return sub(
@@ -20,8 +18,8 @@ def ascii_only(string: str):
         string,
     )
 
-
-async def main(
+# The core logic is moved into its own async function
+async def run_backup(
     username: str, password: str, output_directory: Path, download_images: bool
 ):
     print("Logging in")
@@ -31,11 +29,10 @@ async def main(
     stories = await fetch_library(username, cookies)
     download_history_path = Path(output_directory / "download_history")
     if download_history_path.exists():
-        file = open(download_history_path, "r")
-        download_history = load(file)
+        with open(download_history_path, "r") as file:
+            download_history = load(file)
     else:
         download_history_path.parent.mkdir(parents=True, exist_ok=True)
-        file = open(download_history_path, "x")
         download_history = {}
 
     print("Downloading missing/outdated stories")
@@ -52,18 +49,19 @@ async def main(
 
             cover_data = await fetch_image(
                 metadata["cover"].replace("-256-", "-512-")
-            )  # Increase resolution
+            )
             if not cover_data:
-                raise HTTPException(status_code=422)
+                # Handle this error more gracefully if needed
+                print(f"Warning: Could not fetch cover for {metadata['title']}")
+                continue
+
 
             story_zip = await fetch_story_content_zip(metadata["id"], cookies)
             archive = ZipFile(story_zip, "r")
-
-            part_trees: list[BeautifulSoup] = []
+            part_trees = []
 
             for part in metadata["parts"]:
-
-                if "deleted" in part and part["deleted"]:
+                if part.get("deleted", False):
                     continue
 
                 part_trees.append(
@@ -85,7 +83,7 @@ async def main(
 
             output_path = (
                 output_directory
-                / ascii_only(metadata["user"]["username"])
+                / ascii_only(metadata["user"]["name"]) # Corrected to 'name' as 'username' is not in the user object
                 / ascii_only((metadata["title"] + ".epub"))
             )
 
@@ -93,22 +91,37 @@ async def main(
 
             if output_path.exists():
                 remove(output_path)
-            output = open(output_path, "xb")
-            output.write(book.dump().getvalue())
-            output.close()
+            with open(output_path, "xb") as output:
+                output.write(book.dump().getvalue())
 
             download_history[metadata["title"]] = metadata["modifyDate"]
     finally:
         with open(download_history_path, "w") as file:
             dump(download_history, file)
 
+def main():
+    # 1. Set up the argument parser
+    parser = argparse.ArgumentParser(description="Wattpad Backup Utility")
 
-if __name__ == "__main__":
+    # 2. Define the arguments you want to accept
+    parser.add_argument("-u", "--username", type=str, required=True, help="Your Wattpad username.")
+    parser.add_argument("-p", "--password", type=str, required=True, help="Your Wattpad password.")
+    parser.add_argument("-o", "--output", type=Path, default=Path("./wattpad_backup"), help="The directory to save your EPUB files.")
+    parser.add_argument("--use-images", action="store_true", help="Include this flag to download images with the stories.")
+
+    # 3. Parse the arguments from the command line
+    args = parser.parse_args()
+
+    # 4. Run your asynchronous backup function with the parsed arguments
     run(
-        main(
-            environ.get("USERNAME"),
-            environ.get("PASSWORD"),
-            Path(environ.get("OUTPUT_DIRECTORY")),
-            environ.get("DOWNLOAD_IMAGES"),
+        run_backup(
+            username=args.username,
+            password=args.password,
+            output_directory=args.output,
+            download_images=args.use_images,
         )
     )
+
+
+if __name__ == "__main__":
+    main()
