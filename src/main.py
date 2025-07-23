@@ -11,6 +11,7 @@ from re import sub
 
 load_dotenv()
 
+
 def ascii_only(string: str):
     string = string.replace(" ", "_")
     return sub(
@@ -28,7 +29,7 @@ async def main(
 
     print("Fetching library")
     stories = await fetch_library(username, cookies)
-    download_history_path=Path(output_directory / "download_history")
+    download_history_path = Path(output_directory / "download_history")
     if download_history_path.exists():
         file = open(download_history_path, "r")
         download_history = load(file)
@@ -47,7 +48,7 @@ async def main(
             ):
                 continue
 
-            print(f"Downloading: {metadata["title"]}")
+            print(f"Downloading: {metadata['title']}")
 
             cover_data = await fetch_image(
                 metadata["cover"].replace("-256-", "-512-")
@@ -83,7 +84,9 @@ async def main(
             book.compile()
 
             output_path = (
-                output_directory / ascii_only(metadata["user"]["username"]) / ascii_only((metadata["title"]+".epub"))
+                output_directory
+                / ascii_only(metadata["user"]["username"])
+                / ascii_only((metadata["title"] + ".epub"))
             )
 
             output_path.parent.mkdir(parents=True, exist_ok=True)

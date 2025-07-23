@@ -12,7 +12,6 @@ headers = {
 }
 
 
-# This function is from https://github.com/TheOnlyWayUp/WattpadDownloader
 async def fetch_cookies(username: str, password: str) -> dict:
     # source: https://github.com/TheOnlyWayUp/WP-DM-Export/blob/dd4c7c51cb43f2108e0f63fc10a66cd24a740e4e/src/API/src/main.py#L25-L58
     """Retrieves authorization cookies from Wattpad by logging in with user creds.
@@ -49,7 +48,6 @@ async def fetch_cookies(username: str, password: str) -> dict:
 
             return cookies
 
-# This function is from https://github.com/TheOnlyWayUp/WattpadDownloader
 @backoff.on_exception(backoff.expo, ClientResponseError, max_time=15)
 async def fetch_story_content_zip(story_id: int, cookies: dict) -> BytesIO:
     """BytesIO Stream of an Archive of Part Contents for a Story."""

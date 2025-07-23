@@ -4,6 +4,8 @@ A python script that automatically downloads and organizes all the fics an accou
 
 I wrote this because I have an ~~ir~~rational fear of my favorite fics being deleted forever.
 
+A lot of stuff in this is from https://github.com/TheOnlyWayUp/WattpadDownloader
+
 ### Usage:
 
 Using a virtual environment is recommended **(optional)**:
