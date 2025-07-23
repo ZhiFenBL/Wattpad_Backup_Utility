@@ -3,9 +3,6 @@ import backoff
 from aiohttp import ClientResponseError, ClientSession
 from exceptions import PartNotFoundError, StoryNotFoundError
 from models import Story
-from pydantic import TypeAdapter
-
-story_ta = TypeAdapter(Story)
 
 headers = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
